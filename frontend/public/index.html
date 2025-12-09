@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#6366f1" />
+    <meta name="description" content="CivicChain Cloud - Decentralized Governance Platform" />
+    
+    <meta property="og:title" content="CivicChain Cloud" />
+    <meta property="og:description" content="Decentralized governance and community management platform" />
+    <meta property="og:image" content="%PUBLIC_URL%/logo512.png" />
+    <meta property="og:url" content="https://civicchain.cloud" />
+    <meta name="twitter:card" content="summary_large_image" />
+    
+    <title>CivicChain Cloud</title>
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
+    
+    <style>
+      .loading-spinner {
+        display: inline-block;
+        width: 40px;
+        height: 40px;
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #6366f1;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+      .app-loading {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      }
+      .app-logo { width: 120px; height: 120px; margin-bottom: 20px; animation: pulse 2s infinite; }
+      @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+      .app-title { font-size: 2.5rem; font-weight: 700; margin-bottom: 10px; background: linear-gradient(45deg, #fff, #e2e8f0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+      .app-subtitle { font-size: 1.1rem; opacity: 0.9; margin-bottom: 30px; }
+    </style>
+  </head>
+  <body>
+    <noscript>You need to enable JavaScript to run CivicChain Cloud.</noscript>
+    <div id="loading-screen" class="app-loading">
+      <img src="%PUBLIC_URL%/logo512.png" alt="CivicChain Logo" class="app-logo" />
+      <h1 class="app-title">CivicChain Cloud</h1>
+      <p class="app-subtitle">Decentralized Governance Platform</p>
+      <div class="loading-spinner"></div>
+      <p style="margin-top: 20px; font-size: 0.9rem; opacity: 0.8;">Initializing blockchain connection...</p>
+    </div>
+    <div id="root"></div>
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(() => {
+          const loadingScreen = document.getElementById('loading-screen');
+          if (loadingScreen) {
+            loadingScreen.style.opacity = '0';
+            loadingScreen.style.transition = 'opacity 0.5s ease-out';
+            setTimeout(() => { if (loadingScreen) loadingScreen.style.display = 'none'; }, 500);
+          }
+        }, 2000);
+      });
+    </script>
+  </body>
+</html>

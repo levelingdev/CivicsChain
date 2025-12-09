@@ -1,0 +1,20 @@
+.wallet-badge {
+  display: flex; align-items: center; gap: 10px;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 8px 16px; border-radius: 30px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+.status-indicator { width: 10px; height: 10px; border-radius: 50%; background: #ccc; }
+.status-indicator.online { background: #10b981; box-shadow: 0 0 8px rgba(16, 185, 129, 0.4); }
+.wallet-text { display: flex; flex-direction: column; line-height: 1.1; }
+.wallet-label { font-size: 0.7rem; color: #64748b; font-weight: 600; text-transform: uppercase; }
+.wallet-addr { font-size: 0.9rem; font-weight: 700; color: #1e293b; font-family: monospace; }
+
+.connect-btn {
+  background: #1e293b; color: white; border: none;
+  padding: 10px 20px; border-radius: 30px;
+  font-weight: 700; cursor: pointer; transition: 0.2s;
+  box-shadow: 0 4px 15px rgba(30, 41, 59, 0.3);
+}
+.connect-btn:hover { transform: translateY(-2px); background: #0f172a; }

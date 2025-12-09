@@ -1,0 +1,34 @@
+.dashboard { padding: 0; max-width: 1200px; margin: 0 auto; }
+.dashboard-welcome { margin-bottom: 2rem; }
+.dashboard-welcome h1 { font-size: 2rem; color: #1e293b; margin-bottom: 0.5rem; }
+.dashboard-welcome p { color: #64748b; }
+
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; }
+
+.stat-card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  transition: transform 0.3s ease;
+  border: 1px solid rgba(0,0,0,0.05);
+  box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+}
+.stat-card:hover { transform: translateY(-5px); }
+
+.stat-icon {
+  width: 60px; height: 60px;
+  border-radius: 16px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.8rem;
+}
+.stat-info h3 { font-size: 1.8rem; color: #1e293b; margin: 0; font-weight: 800; }
+.stat-info span { color: #64748b; font-size: 0.9rem; font-weight: 600; }
+
+/* Colors */
+.purple .stat-icon { background: #f3e8ff; color: #9333ea; }
+.blue .stat-icon { background: #dbeafe; color: #2563eb; }
+.green .stat-icon { background: #dcfce7; color: #16a34a; }
+.orange .stat-icon { background: #ffedd5; color: #ea580c; }

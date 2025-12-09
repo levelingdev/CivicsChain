@@ -1,0 +1,33 @@
+# --- DEPENDENCIES ---
+node_modules/
+/cloud/venv/
+/cloud/__pycache__/
+*.pyc
+
+# --- ENVIRONMENT & SECRETS (VERY IMPORTANT) ---
+.env
+.DS_Store
+
+# --- DATABASE ---
+# Ignore local MongoDB data if you put it inside the project
+/backend/data/
+mongod.lock
+
+# --- CLOUD STORAGE (CRITICAL) ---
+# Do NOT upload the 3GB virtual disk
+*.vfat
+*.img
+/cloud/civic_cloud_disk.vfat
+/cloud/ids
+/cloud/credentials
+
+# --- BACKEND UPLOADS ---
+# Keep the folder, but ignore the files inside
+/backend/uploads_temp/*
+!/backend/uploads_temp/.gitkeep
+
+# --- BLOCKCHAIN ---
+/blockchain/artifacts/
+/blockchain/cache/
+/blockchain/coverage/
+/blockchain/typechain/

@@ -1,0 +1,13 @@
+.layout {
+  display: flex;
+  min-height: 100vh;
+  background-color: #f8fafc;
+}
+
+.main-content {
+  flex: 1;
+  padding: 2rem;
+  margin-left: 260px; /* ✅ MUST match Sidebar width to prevent overlap */
+  background-color: #f1f5f9;
+  min-height: 100vh;
+}
