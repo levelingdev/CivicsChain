@@ -60,7 +60,7 @@ class CivicCloudServiceStub(object):
                 request_serializer=cloud__pb2.GetNodesRequest.SerializeToString,
                 response_deserializer=cloud__pb2.NodesResponse.FromString,
                 _registered_method=True)
-        self.StoreProjectDocument = channel.unary_unary(
+        self.StoreProjectDocument = channel.stream_unary(
                 '/cloud.CivicCloudService/StoreProjectDocument',
                 request_serializer=cloud__pb2.StoreProjectDocumentRequest.SerializeToString,
                 response_deserializer=cloud__pb2.StoreProjectDocumentResponse.FromString,
@@ -136,8 +136,9 @@ class CivicCloudServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def StoreProjectDocument(self, request, context):
-        """Missing associated documentation comment in .proto file."""
+    def StoreProjectDocument(self, request_iterator, context):
+        """✅ THE 'stream' KEYWORD HERE IS MANDATORY
+        """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
@@ -155,8 +156,7 @@ class CivicCloudServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def GetAdminStats(self, request, context):
-        """ADMIN RPCS
-        """
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
@@ -168,8 +168,7 @@ class CivicCloudServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def AddNode(self, request, context):
-        """DYNAMIC NODE RPCS
-        """
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
@@ -214,7 +213,7 @@ def add_CivicCloudServiceServicer_to_server(servicer, server):
                     request_deserializer=cloud__pb2.GetNodesRequest.FromString,
                     response_serializer=cloud__pb2.NodesResponse.SerializeToString,
             ),
-            'StoreProjectDocument': grpc.unary_unary_rpc_method_handler(
+            'StoreProjectDocument': grpc.stream_unary_rpc_method_handler(
                     servicer.StoreProjectDocument,
                     request_deserializer=cloud__pb2.StoreProjectDocumentRequest.FromString,
                     response_serializer=cloud__pb2.StoreProjectDocumentResponse.SerializeToString,
@@ -402,7 +401,7 @@ class CivicCloudService(object):
             _registered_method=True)
 
     @staticmethod
-    def StoreProjectDocument(request,
+    def StoreProjectDocument(request_iterator,
             target,
             options=(),
             channel_credentials=None,
@@ -412,8 +411,8 @@ class CivicCloudService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
+        return grpc.experimental.stream_unary(
+            request_iterator,
             target,
             '/cloud.CivicCloudService/StoreProjectDocument',
             cloud__pb2.StoreProjectDocumentRequest.SerializeToString,

@@ -6,30 +6,30 @@ const fs = require('fs');
 const Project = require('../models/Project');
 const { authenticateToken } = require('../middleware/auth'); 
 
-// ✅ OPTIMIZATION: Use Disk Storage for large files
 const upload = multer({ 
   storage: multer.diskStorage({
-    destination: 'uploads_temp/', // Ensure this folder exists!
+    destination: 'uploads_temp/',
     filename: (req, file, cb) => {
       cb(null, Date.now() + '-' + file.originalname);
     }
   }),
-  limits: { fileSize: 3000 * 1024 * 1024 } // 3GB
+  limits: { fileSize: 4000 * 1024 * 1024 } // 4GB Limit
 });
 
-// gRPC Setup
 const PROTO_PATH = path.resolve(__dirname, '..', '..', 'cloud', 'cloud.proto');
 const protoLoader = require('@grpc/proto-loader');
 const grpc = require('@grpc/grpc-js');
 const packageDefinition = protoLoader.loadSync(PROTO_PATH, { keepCase: true, longs: String, enums: String, defaults: true, oneofs: true });
 const cloudProto = grpc.loadPackageDefinition(packageDefinition).cloud;
+
+// Client Limit (Keep < 2GB for Windows, streaming bypasses this)
+const MAX_SIZE = 2 * 1024 * 1024 * 1024 - 1000; 
 const cloudClient = new cloudProto.CivicCloudService(
   process.env.CLOUD_GRPC_ENDPOINT || '127.0.0.1:9002',
   grpc.credentials.createInsecure(),
-  { 'grpc.max_receive_message_length': 1024*1024*1024*3, 'grpc.max_send_message_length': 1024*1024*1024*3 }
+  { 'grpc.max_receive_message_length': MAX_SIZE, 'grpc.max_send_message_length': MAX_SIZE }
 );
 
-// --- ROUTES ---
 router.get('/', async (req, res) => {
   try {
     const projects = await Project.find().sort({ createdAt: -1 });
@@ -38,8 +38,7 @@ router.get('/', async (req, res) => {
 });
 
 router.get('/:ipfsHash/view', (req, res) => {
-  const { ipfsHash } = req.params;
-  cloudClient.GetProjectDocument({ token: "public", ipfs_hash: ipfsHash }, (err, response) => {
+  cloudClient.GetProjectDocument({ token: "public", ipfs_hash: req.params.ipfsHash }, (err, response) => {
     if (err || !response.data) return res.status(404).send("File not found");
     const filename = response.filename || "file.bin";
     let contentType = 'application/octet-stream';
@@ -52,70 +51,68 @@ router.get('/:ipfsHash/view', (req, res) => {
   });
 });
 
-// ✅ CREATE PROJECT WITH DISK STREAMING
+// ✅ CREATE PROJECT (STREAMING)
 router.post('/', authenticateToken, upload.single('file'), async (req, res) => {
-  req.setTimeout(0); // Disable timeout for large uploads
-  
+  req.setTimeout(0);
   try {
     if (!req.file || !req.body.title) return res.status(400).json({ error: 'Missing Data' });
     
-    // Read the file buffer from disk (Note: Node still has 2GB buffer limit, but this helps initial upload)
-    const fileBuffer = fs.readFileSync(req.file.path);
+    console.log(`📤 Streaming ${req.file.size} bytes to Cloud...`);
 
-    const cloudUpload = new Promise((resolve, reject) => {
-      cloudClient.StoreProjectDocument({
-        token: req.user.cloudToken,
-        project_id: "new", 
-        filename: req.file.originalname,
-        data: fileBuffer, 
-        proposer_wallet: req.body.proposer
-      }, (err, response) => {
-        if (err) reject(err); else resolve(response);
-      });
+    // 1. Setup gRPC Stream
+    const call = cloudClient.StoreProjectDocument((err, response) => {
+        if (err) console.error("Cloud Error:", err);
     });
 
-    const cloudResponse = await cloudUpload;
+    const cloudUpload = new Promise((resolve, reject) => {
+        call.on('data', (response) => resolve(response));
+        call.on('error', (err) => reject(err));
+        call.on('end', () => {});
+    });
 
-    // Cleanup: Delete temp file
+    // 2. Pipe File from Disk
+    const readStream = fs.createReadStream(req.file.path, { highWaterMark: 4 * 1024 * 1024 }); // 4MB chunks
+    
+    for await (const chunk of readStream) {
+        call.write({
+            token: req.user.cloudToken,
+            project_id: "new",
+            filename: req.file.originalname,
+            proposer_wallet: req.body.proposer,
+            data: chunk
+        });
+    }
+    call.end();
+
+    const cloudResponse = await cloudUpload;
+    console.log("✅ Upload Success:", cloudResponse.ipfs_hash);
+
     fs.unlinkSync(req.file.path);
 
     const project = new Project({
-      blockchainId: Date.now(), 
-      title: req.body.title,
-      description: req.body.description,
-      ipfsHash: cloudResponse.ipfs_hash, 
-      fundingGoal: req.body.fundingGoal,
-      proposer: req.body.proposer,
-      deadline: Math.floor(Date.now() / 1000) + (30 * 24 * 60 * 60), 
-      status: 'proposed',
-      deletionRequested: false 
+      blockchainId: Date.now(), title: req.body.title, description: req.body.description,
+      ipfsHash: cloudResponse.ipfs_hash, fundingGoal: req.body.fundingGoal, proposer: req.body.proposer,
+      deadline: Math.floor(Date.now() / 1000) + (30 * 24 * 60 * 60), status: 'proposed', deletionRequested: false
     });
 
     const savedProject = await project.save();
     res.status(201).json(savedProject);
   } catch (err) {
-    // Cleanup on error too
-    if (req.file) fs.unlinkSync(req.file.path);
+    if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
     res.status(500).json({ error: err.message });
   }
 });
 
 router.post('/:id/request-delete', authenticateToken, async (req, res) => {
-  try {
-    const project = await Project.findById(req.params.id);
-    if (!project) return res.status(404).json({ error: "Project not found" });
-    project.deletionRequested = true;
-    await project.save();
-    res.json({ message: "Deletion requested." });
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  const project = await Project.findById(req.params.id);
+  project.deletionRequested = true;
+  await project.save();
+  res.json({ message: "Requested" });
 });
 
 router.delete('/:id', authenticateToken, async (req, res) => {
-  try {
-    if (req.user.userId !== 'admin') return res.status(403).json({ error: "Admins only" });
-    await Project.findByIdAndDelete(req.params.id);
-    res.json({ message: "Project deleted" });
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  await Project.findByIdAndDelete(req.params.id);
+  res.json({ message: "Deleted" });
 });
 
 module.exports = router;

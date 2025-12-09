@@ -3,63 +3,27 @@ syntax = "proto3";
 package cloud;
 
 // --- AUTH ---
-message LoginRequest {
-  string login = 1;
-  string password = 2;
-}
-
-message Response {
-  string result = 1;
-}
-
-message VerifyOTPRequest {
-  string login = 1;
-  string otp = 2;
-}
-
-message TokenResponse {
-  string token = 1;
-  string user_id = 2;
-}
-
-message RegisterInitRequest {
-  string username = 1;
-  string email = 2;
-  string password = 3;
-}
-
-message RegisterVerifyRequest {
-  string email = 1;
-  string otp = 2;
-}
+message LoginRequest { string login = 1; string password = 2; }
+message Response { string result = 1; }
+message VerifyOTPRequest { string login = 1; string otp = 2; }
+message TokenResponse { string token = 1; string user_id = 2; }
+message RegisterInitRequest { string username = 1; string email = 2; string password = 3; }
+message RegisterVerifyRequest { string email = 1; string otp = 2; }
 
 // --- STORAGE ---
-message GetNodesRequest {
-  string token = 1;
-}
-
+message GetNodesRequest { string token = 1; }
 message NodeInfo {
-  string node_id = 1;
-  string status = 2;
-  string vip = 3;
-  string ip = 4;
-  int32 port = 5;
-  double used_mb = 6;
-  int32 total_mb = 7;
-  int64 uptime = 8;
+  string node_id = 1; string status = 2; string vip = 3; string ip = 4;
+  int32 port = 5; double used_mb = 6; int32 total_mb = 7; int64 uptime = 8;
 }
+message NodesResponse { map<string, NodeInfo> nodes = 1; int32 total_nodes = 2; int64 total_storage = 3; }
 
-message NodesResponse {
-  map<string, NodeInfo> nodes = 1;
-  int32 total_nodes = 2;
-  int64 total_storage = 3;
-}
-
+// ✅ THIS IS THE KEY FOR LARGE FILES
 message StoreProjectDocumentRequest {
   string token = 1;
   string project_id = 2;
   string filename = 3;
-  bytes data = 4;
+  bytes data = 4;        // Tiny chunks (e.g. 4MB) flow through here repeatedly
   string proposer_wallet = 5;
 }
 
@@ -70,82 +34,21 @@ message StoreProjectDocumentResponse {
   int32 node_count = 4;
 }
 
-message GetProjectDocumentRequest {
-  string token = 1;
-  string ipfs_hash = 2;
-}
-
-message GetProjectDocumentResponse {
-  bytes data = 1;
-  string filename = 2;
-  int64 size = 3;
-  string node_retrieved = 4;
-}
-
-message HealthCheckRequest {
-  string token = 1;
-}
-
-message HealthCheckResponse {
-  bool healthy = 1;
-  int32 active_nodes = 2;
-  int64 total_storage = 3;
-  double storage_used_percent = 4;
-}
+message GetProjectDocumentRequest { string token = 1; string ipfs_hash = 2; }
+message GetProjectDocumentResponse { bytes data = 1; string filename = 2; int64 size = 3; string node_retrieved = 4; }
+message HealthCheckRequest { string token = 1; }
+message HealthCheckResponse { bool healthy = 1; int32 active_nodes = 2; int64 total_storage = 3; double storage_used_percent = 4; }
 
 // --- ADMIN DASHBOARD ---
-message AdminStatsRequest {
-  string admin_token = 1;
-}
-
-message NodeDetail {
-  string node_id = 1;
-  string status = 2;
-  string ip = 3;
-  int32 port = 4;
-  int64 total_space = 5;
-  int64 used_space = 6;
-  int32 chunk_count = 7;
-  int32 pid = 8;
-}
-
-message AdminStatsResponse {
-  int32 total_users = 1;
-  int32 total_files = 2;
-  int64 total_network_storage = 3;
-  int64 used_network_storage = 4;
-  repeated NodeDetail nodes = 5;
-}
-
-message ToggleNodeRequest {
-  string node_id = 1;
-  string action = 2; // "START" or "STOP"
-}
-
-// --- DYNAMIC NODE MANAGEMENT (NEW) ---
-message AddNodeRequest {
-  string admin_token = 1;
-}
-
-message RemoveNodeRequest {
-  string node_id = 1;
-}
-
-message NodeFileRequest {
-  string node_id = 1;
-}
-
-message FileChunkDetail {
-  string filename = 1;
-  string chunk_id = 2;
-  int32 chunk_index = 3;
-  int64 size = 4;
-}
-
-message NodeFilesResponse {
-  string node_id = 1;
-  repeated FileChunkDetail chunks = 2;
-}
+message AdminStatsRequest { string admin_token = 1; }
+message NodeDetail { string node_id = 1; string status = 2; string ip = 3; int32 port = 4; int64 total_space = 5; int64 used_space = 6; int32 chunk_count = 7; int32 pid = 8; }
+message AdminStatsResponse { int32 total_users = 1; int32 total_files = 2; int64 total_network_storage = 3; int64 used_network_storage = 4; repeated NodeDetail nodes = 5; }
+message ToggleNodeRequest { string node_id = 1; string action = 2; }
+message AddNodeRequest { string admin_token = 1; }
+message RemoveNodeRequest { string node_id = 1; }
+message NodeFileRequest { string node_id = 1; }
+message FileChunkDetail { string filename = 1; string chunk_id = 2; int32 chunk_index = 3; int64 size = 4; }
+message NodeFilesResponse { string node_id = 1; repeated FileChunkDetail chunks = 2; }
 
 // --- SERVICE DEFINITION ---
 service CivicCloudService {
@@ -155,15 +58,15 @@ service CivicCloudService {
   rpc RegisterVerify (RegisterVerifyRequest) returns (Response);
 
   rpc GetNodes (GetNodesRequest) returns (NodesResponse);
-  rpc StoreProjectDocument (StoreProjectDocumentRequest) returns (StoreProjectDocumentResponse);
+  
+  // ✅ THE 'stream' KEYWORD HERE IS MANDATORY
+  rpc StoreProjectDocument (stream StoreProjectDocumentRequest) returns (StoreProjectDocumentResponse);
+  
   rpc GetProjectDocument (GetProjectDocumentRequest) returns (GetProjectDocumentResponse);
   rpc HealthCheck (HealthCheckRequest) returns (HealthCheckResponse);
 
-  // ADMIN RPCS
   rpc GetAdminStats (AdminStatsRequest) returns (AdminStatsResponse);
   rpc ToggleNode (ToggleNodeRequest) returns (Response);
-  
-  // DYNAMIC NODE RPCS
   rpc AddNode (AddNodeRequest) returns (Response);
   rpc RemoveNode (RemoveNodeRequest) returns (Response);
   rpc GetNodeFiles (NodeFileRequest) returns (NodeFilesResponse);
